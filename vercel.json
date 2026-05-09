@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "VOXLINK_FRONTEND/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    },
+    {
+      "src": "VOXLINK_BACKEND/server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "VOXLINK_BACKEND/server.js" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "VOXLINK_FRONTEND/$1" }
+  ]
+}
