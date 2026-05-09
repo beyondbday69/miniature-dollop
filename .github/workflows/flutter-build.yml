@@ -1,0 +1,49 @@
+name: Flutter Build APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'VOXLINK_MOBILE/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: |
+          cd VOXLINK_MOBILE
+          flutter pub get
+
+      - name: Build APK
+        run: |
+          cd VOXLINK_MOBILE
+          flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxlink-release-apk
+          path: VOXLINK_MOBILE/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Create Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: VOXLINK_MOBILE/build/app/outputs/flutter-apk/app-release.apk
+          tag_name: v1.0.0-${{ github.run_number }}
+          name: Release v1.0.0-${{ github.run_number }}
+          body: Automated build of VoxLink Mobile APK.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
