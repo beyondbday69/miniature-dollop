@@ -49,10 +49,8 @@ class _JoinScreenState extends State<JoinScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Request microphone permission
       await Permission.microphone.request();
 
-      // Replace with your deployed Vercel URL
       final baseUrl = 'https://vcrepo.vercel.app';
       final response = await http.get(
         Uri.parse('$baseUrl/api/get-token?room=$roomName&user=$userName'),
@@ -61,9 +59,9 @@ class _JoinScreenState extends State<JoinScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final token = data['token'];
-        
+
         if (!mounted) return;
-        
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -112,11 +110,7 @@ class _JoinScreenState extends State<JoinScreen> {
             const Text(
               'PREMIUM VOICE CONTROL',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-                letterSpacing: 2,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey, letterSpacing: 2),
             ),
             const SizedBox(height: 50),
             TextField(
@@ -145,9 +139,10 @@ class _JoinScreenState extends State<JoinScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: _isLoading 
-                ? const CircularProgressIndicator(color: Colors.black)
-                : const Text('ESTABLISH LINK', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.black)
+                  : const Text('ESTABLISH LINK',
+                      style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             ),
           ],
         ),
@@ -185,10 +180,11 @@ class _RoomScreenState extends State<RoomScreen> {
     _room = Room();
     try {
       await _room!.connect('wss://wasd-9bjnbp7j.livekit.cloud', widget.token);
-      await _room!.localParticipant.setMicrophoneEnabled(true);
+      // FIX 1: localParticipant nullable — use ?.
+      await _room!.localParticipant?.setMicrophoneEnabled(true);
       setState(() {});
     } catch (e) {
-      print('Could not connect: $e');
+      debugPrint('Could not connect: $e');
     }
   }
 
@@ -214,12 +210,15 @@ class _RoomScreenState extends State<RoomScreen> {
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               padding: const EdgeInsets.all(20),
-              itemCount: _room!.participants.length + 1,
+              // FIX 2: participants → remoteParticipants
+              itemCount: _room!.remoteParticipants.length + 1,
               itemBuilder: (context, index) {
                 if (index == 0) {
-                  return ParticipantTile(participant: _room!.localParticipant, isLocal: true);
+                  // FIX 3: localParticipant! (non-null assert)
+                  return ParticipantTile(
+                      participant: _room!.localParticipant!, isLocal: true);
                 }
-                final p = _room!.participants.values.elementAt(index - 1);
+                final p = _room!.remoteParticipants.values.elementAt(index - 1);
                 return ParticipantTile(participant: p);
               },
             ),
@@ -248,7 +247,9 @@ class ParticipantTile extends StatelessWidget {
           CircleAvatar(
             backgroundColor: isLocal ? Colors.white : Colors.grey,
             child: Text(
-              participant.identity.isNotEmpty ? participant.identity[0].toUpperCase() : '?',
+              participant.identity.isNotEmpty
+                  ? participant.identity[0].toUpperCase()
+                  : '?',
               style: const TextStyle(color: Colors.black),
             ),
           ),
